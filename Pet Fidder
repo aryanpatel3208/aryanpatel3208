@@ -1,0 +1,149 @@
+#include <Servo.h>
+
+Servo servo; // Create a servo object
+
+int servoPin = 9;    // Pin connected to the servo motor
+int buzzerPin = 8;   // Pin connected to the buzzer
+
+long interval2 = 100; // time interval for servo movement
+long previousMillis2 = 0;
+long foodDropInterval = 10000; // time interval between food drops
+bool foodDropped = false; // Flag to indicate if food has been dropped
+
+long ledInterval1 = 4000; // LED time interval for 1st LED
+long previousMillisLED1 = 0;
+long previousMillisLED2 = 0;
+long ledPeriod = 250; // time LED stays lit
+
+long ledInterval2 = 4250;
+long previousMillisLED3 = 0;
+long previousMillisLED4 = 0;
+
+long ledInterval3 = 4500;
+long previousMillisLED5 = 0;
+long previousMillisLED6 = 0;
+
+long ledInterval4 = 4750;
+long previousMillisLED7 = 0;
+long previousMillisLED8 = 0;
+
+bool systemOn = false; // Flag to indicate if the system is on or off
+
+// Timer variables
+unsigned long timerStart = 0; // Variable to store the start time of the timer
+int timerDuration = 0; // Variable to store the timer duration in seconds
+
+void setup() {
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+
+  servo.attach(servoPin); // Attach the servo to its pin
+  pinMode(buzzerPin, OUTPUT); // Set the buzzer pin as output
+
+  Serial.begin(9600); // Initialize serial communication
+
+  // Prompt the user to turn the system on or off
+  Serial.println("WOULD YOU LIKE TO TURN ON/OFF SYSTEM:");
+  while (!Serial.available()) {} // Wait for user input
+  String input = Serial.readStringUntil('\n'); // Read user input
+  if (input.equalsIgnoreCase("ON")) {
+    systemOn = true;
+    Serial.println("System turned ON");
+  } else {
+    systemOn = false;
+    Serial.println("System turned OFF");
+    // Turn off all components
+    digitalWrite(3, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    servo.write(0);
+    noTone(buzzerPin);
+  }
+}
+
+void loop() {
+  if (Serial.available() > 0) { // Check if there's serial input
+    String input = Serial.readStringUntil('\n'); // Read user input
+    if (input.equalsIgnoreCase("ON")) { // Check if user input is 'ON'
+      systemOn = true; // Turn on the system
+      Serial.println("System turned ON");
+    } else if (input.equalsIgnoreCase("OFF")) { // Check if user input is 'OFF'
+      systemOn = false; // Turn off the system
+      Serial.println("System turned OFF");
+      // Turn off all components
+      digitalWrite(3, LOW);
+      digitalWrite(4, LOW);
+      digitalWrite(5, LOW);
+      digitalWrite(6, LOW);
+      servo.write(0);
+      noTone(buzzerPin);
+    } else if (input.startsWith("SETTIMER")) { // Check if user wants to set a timer
+      int duration = input.substring(8).toInt(); // Extract the duration from the input string
+      setTimer(duration); // Set the timer duration
+    }
+  }
+
+  if (systemOn) {
+    unsigned long currentMillis = millis(); // time counters
+
+    // LED control logic
+    if (currentMillis - previousMillisLED1 >= ledInterval1) {
+      digitalWrite(3, HIGH); // turn the LED on
+      previousMillisLED1 = currentMillis; // save the last time this LED was updated
+    }
+    if (currentMillis - previousMillisLED3 >= ledInterval2) {
+      digitalWrite(4, HIGH); // turn the LED on
+      previousMillisLED3 = currentMillis; // save the last time this LED was updated
+    }
+    if (currentMillis - previousMillisLED5 >= ledInterval3) {
+      digitalWrite(5, HIGH); // turn the LED on
+      previousMillisLED5 = currentMillis; // save the last time this LED was updated
+    }
+    if (currentMillis - previousMillisLED7 >= ledInterval4) {
+      digitalWrite(6, HIGH); // turn the LED on
+      previousMillisLED7 = currentMillis; // save the last time this LED was updated
+    }
+
+    // Ensure the LEDs stay on for the specified period
+    if (currentMillis - previousMillisLED1 >= ledPeriod) {
+      digitalWrite(3, LOW); // turn the LED off
+    }
+    if (currentMillis - previousMillisLED3 >= ledPeriod) {
+      digitalWrite(4, LOW); // turn the LED off
+    }
+    if (currentMillis - previousMillisLED5 >= ledPeriod) {
+      digitalWrite(5, LOW); // turn the LED off
+    }
+    if (currentMillis - previousMillisLED7 >= ledPeriod) {
+      digitalWrite(6, LOW); // turn the LED off
+    }
+
+    // Countdown timer
+    if (timerDuration > 0 && currentMillis - timerStart >= 1000) {
+      Serial.println(timerDuration); // Print remaining time to serial monitor
+      timerDuration--; // Decrement timer duration
+      timerStart = currentMillis; // Update timer start time
+
+      // Check if timer has reached zero
+      if (timerDuration == 0) {
+        // Trigger buzzer and servo
+        tone(buzzerPin, 1000);
+        servo.write(120); // Move servo to 120 degrees
+      }
+    }
+  }
+}
+
+// Function to set the timer duration in seconds
+void setTimer(int seconds) {
+  // Set the timer duration
+  timerDuration = seconds;
+  // Set the timer start time
+  timerStart = millis();
+  Serial.print("Timer set for ");
+  Serial.print(timerDuration);
+  Serial.println(" seconds.");
+}
